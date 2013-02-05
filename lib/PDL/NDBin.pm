@@ -1,6 +1,6 @@
 package PDL::NDBin;
 {
-  $PDL::NDBin::VERSION = '0.006'; # TRIAL
+  $PDL::NDBin::VERSION = '0.007'; # TRIAL
 }
 # ABSTRACT: Multidimensional binning & histogramming
 
@@ -300,7 +300,10 @@ sub process
 	# now visit all the bins
 	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $idx );
 	$log->debug( 'iterator object created: ' . Dumper $iter );
-	while( my( $bin, $i ) = $iter->next ) { $self->{instances}->[ $i ]->process( $iter ) }
+	while( $iter->advance ) {
+		my $i = $iter->var;
+		$self->{instances}->[ $i ]->process( $iter );
+	}
 
 	return $self;
 }
@@ -489,7 +492,7 @@ PDL::NDBin - Multidimensional binning & histogramming
 
 =head1 VERSION
 
-version 0.006
+version 0.007
 
 =head1 SYNOPSIS
 

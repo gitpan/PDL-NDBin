@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::Avg;
 {
-  $PDL::NDBin::Action::Avg::VERSION = '0.007'; # TRIAL
+  $PDL::NDBin::Action::Avg::VERSION = '0.008'; # TRIAL
 }
 # ABSTRACT: Action for PDL::NDBin that computes average
 
@@ -43,6 +43,7 @@ sub result
 1;
 
 __END__
+
 =pod
 
 =head1 NAME
@@ -51,7 +52,7 @@ PDL::NDBin::Action::Avg - Action for PDL::NDBin that computes average
 
 =head1 VERSION
 
-version 0.007
+version 0.008
 
 =head1 DESCRIPTION
 
@@ -90,4 +91,3 @@ This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-

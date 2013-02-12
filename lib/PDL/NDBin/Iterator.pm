@@ -1,6 +1,6 @@
 package PDL::NDBin::Iterator;
 {
-  $PDL::NDBin::Iterator::VERSION = '0.007'; # TRIAL
+  $PDL::NDBin::Iterator::VERSION = '0.008'; # TRIAL
 }
 # ABSTRACT: Iterator object for PDL::NDBin
 
@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use Carp;
 use List::Util qw( reduce );
+use XSLoader;
 
 
 
@@ -32,22 +33,7 @@ sub new
 }
 
 
-sub advance
-{
-	my $self = shift;
-	return if $self->{bin} >= $self->{nbins};			# return if $self->done;
-	for( ;; ) {
-		undef $self->{selection};				# we're switching to a new var!
-		if( ++$self->{var} >= $self->{nvars} ) {
-			$self->{var} = 0;
-			return if ++$self->{bin} >= $self->{nbins};	# return if $self->done;
-			undef $self->{want};				# we're switching to a new bin!
-			undef $self->{unflattened};
-		}
-		last if $self->{active}->[ $self->{var} ];		# last if $self->var_active;
-	}
-	return 1;
-}
+# advance() is implemented in XS
 
 
 sub bin   { $_[0]->{bin} }
@@ -104,9 +90,12 @@ sub unflatten
 	return @{ $self->{unflattened} };
 }
 
+XSLoader::load( __PACKAGE__ );
+
 1;
 
 __END__
+
 =pod
 
 =head1 NAME
@@ -115,7 +104,7 @@ PDL::NDBin::Iterator - Iterator object for PDL::NDBin
 
 =head1 VERSION
 
-version 0.007
+version 0.008
 
 =head1 DESCRIPTION
 
@@ -277,4 +266,3 @@ This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-

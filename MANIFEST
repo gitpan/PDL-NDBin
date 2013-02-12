@@ -3,6 +3,7 @@ LICENSE
 MANIFEST
 MANIFEST.SKIP
 Makefile.PL
+NDBin.pdf
 README
 dist.ini
 examples/ex01/ex01.pl
@@ -43,3 +44,6 @@ tools/genrand.pl
 tools/mkfeatlist.pl
 tools/mktable.pl
 tools/run_benchmark
+xs/Iterator.xs
+xs/Makefile.PL
+xs/ppport.h

@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::Count;
 {
-  $PDL::NDBin::Action::Count::VERSION = '0.007'; # TRIAL
+  $PDL::NDBin::Action::Count::VERSION = '0.008'; # TRIAL
 }
 # ABSTRACT: Action for PDL::NDBin that counts elements
 
@@ -41,6 +41,7 @@ sub result
 1;
 
 __END__
+
 =pod
 
 =head1 NAME
@@ -49,7 +50,7 @@ PDL::NDBin::Action::Count - Action for PDL::NDBin that counts elements
 
 =head1 VERSION
 
-version 0.007
+version 0.008
 
 =head1 DESCRIPTION
 
@@ -88,4 +89,3 @@ This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-

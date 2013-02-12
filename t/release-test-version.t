@@ -17,7 +17,7 @@ my @imports = ( 'version_all_ok' );
 
 my $params = {
     is_strict   => 0,
-    has_version => 0,
+    has_version => 1,
 };
 
 push @imports, $params

@@ -71,6 +71,7 @@ eval { $v .= pmver('Test::PDL','0.04') };
 eval { $v .= pmver('Test::Pod','1.41') };
 eval { $v .= pmver('Test::Pod::Coverage','1.08') };
 eval { $v .= pmver('UUID::Tiny','any version') };
+eval { $v .= pmver('XSLoader','any version') };
 eval { $v .= pmver('integer','any version') };
 eval { $v .= pmver('strict','any version') };
 eval { $v .= pmver('version','0.9901') };

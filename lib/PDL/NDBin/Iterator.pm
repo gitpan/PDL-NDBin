@@ -1,6 +1,6 @@
 package PDL::NDBin::Iterator;
 {
-  $PDL::NDBin::Iterator::VERSION = '0.009';
+  $PDL::NDBin::Iterator::VERSION = '0.010';
 }
 # ABSTRACT: Iterator object for PDL::NDBin
 
@@ -113,7 +113,7 @@ PDL::NDBin::Iterator - Iterator object for PDL::NDBin
 
 =head1 VERSION
 
-version 0.009
+version 0.010
 
 =head1 DESCRIPTION
 

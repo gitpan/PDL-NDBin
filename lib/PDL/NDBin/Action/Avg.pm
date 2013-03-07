@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::Avg;
 {
-  $PDL::NDBin::Action::Avg::VERSION = '0.009';
+  $PDL::NDBin::Action::Avg::VERSION = '0.010';
 }
 # ABSTRACT: Action for PDL::NDBin that computes average
 
@@ -56,7 +56,7 @@ PDL::NDBin::Action::Avg - Action for PDL::NDBin that computes average
 
 =head1 VERSION
 
-version 0.009
+version 0.010
 
 =head1 DESCRIPTION
 

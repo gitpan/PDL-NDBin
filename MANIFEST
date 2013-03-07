@@ -3,7 +3,6 @@ LICENSE
 MANIFEST
 MANIFEST.SKIP
 Makefile.PL
-NDBin.pdf
 README
 dist.ini
 examples/ex01/ex01.pl

@@ -31,6 +31,7 @@ my %WriteMakefileArgs = (
   "NAME" => "PDL::NDBin",
   "PREREQ_PM" => {
     "Carp" => 0,
+    "Class::Load" => 0,
     "Data::Dumper" => 0,
     "Exporter" => 0,
     "List::MoreUtils" => 0,
@@ -39,13 +40,14 @@ my %WriteMakefileArgs = (
     "Math::Round" => 0,
     "PDL::Lite" => 0,
     "POSIX" => 0,
+    "Params::Validate" => 0,
     "UUID::Tiny" => 0,
     "XSLoader" => 0,
     "integer" => 0,
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.008",
+  "VERSION" => "0.009",
   "test" => {
     "TESTS" => "t/*.t"
   }

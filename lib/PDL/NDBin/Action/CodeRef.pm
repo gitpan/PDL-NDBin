@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::CodeRef;
 {
-  $PDL::NDBin::Action::CodeRef::VERSION = '0.008'; # TRIAL
+  $PDL::NDBin::Action::CodeRef::VERSION = '0.009';
 }
 # ABSTRACT: Action for PDL::NDBin that calls user sub
 
@@ -8,14 +8,18 @@ package PDL::NDBin::Action::CodeRef;
 use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
+use Params::Validate qw( validate CODEREF SCALAR UNDEF );
 
 
 sub new
 {
 	my $class = shift;
-	my $m = shift;
-	my $coderef = shift;
-	return bless { m => $m, coderef => $coderef }, $class;
+	my $self = validate( @_, {
+			N       => { type => SCALAR, regex => qr/^\d+$/ },
+			coderef => { type => CODEREF },
+			type    => { type => CODEREF | UNDEF, optional => 1 }
+		} );
+	return bless $self, $class;
 }
 
 
@@ -23,7 +27,10 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	$self->{out} = PDL->zeroes( $iter->data->type, $self->{m} )->setbadif( 1 ) unless defined $self->{out};
+	if( ! defined $self->{out} ) {
+		my $type = $self->{type} ? $self->{type}->() : $iter->data->type;
+		$self->{out} = PDL->zeroes( $type, $self->{N} )->setbadif( 1 );
+	}
 	my $value = $self->{coderef}->( $iter );
 	if( defined $value ) { $self->{out}->set( $iter->bin, $value ) }
 	return $self;
@@ -48,7 +55,7 @@ PDL::NDBin::Action::CodeRef - Action for PDL::NDBin that calls user sub
 
 =head1 VERSION
 
-version 0.008
+version 0.009
 
 =head1 DESCRIPTION
 
@@ -62,19 +69,29 @@ just to implement an action).
 
 =head2 new()
 
-	my $instance = PDL::NDBin::Action::CodeRef->new( $N, $coderef );
+	my $instance = PDL::NDBin::Action::CodeRef->new(
+		N       => $N,
+		coderef => $coderef,
+		type    => \&PDL::double,   # optional
+	);
 
-Construct an instance for this action. Requires two parameters:
+Construct an instance for this action. Accepts three parameters:
 
 =over 4
 
-=item $N
+=item I<N>
 
-The number of bins.
+The number of bins. Required.
 
-=item $coderef
+=item I<coderef>
 
-A reference to an anonymous or named subroutine that implements the real action.
+A reference to an anonymous or named subroutine that implements the real
+action. Required.
+
+=item I<type>
+
+The type of the output variable. Optional. Defaults to the type of the variable
+this instance is associated with.
 
 =back
 

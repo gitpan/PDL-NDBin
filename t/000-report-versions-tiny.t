@@ -49,6 +49,7 @@ sub pmver {
 }
 
 eval { $v .= pmver('Carp','any version') };
+eval { $v .= pmver('Class::Load','any version') };
 eval { $v .= pmver('Data::Dumper','any version') };
 eval { $v .= pmver('Exporter','any version') };
 eval { $v .= pmver('ExtUtils::MakeMaker','6.30') };
@@ -62,6 +63,7 @@ eval { $v .= pmver('Module::Pluggable','any version') };
 eval { $v .= pmver('PDL','any version') };
 eval { $v .= pmver('PDL::Lite','any version') };
 eval { $v .= pmver('POSIX','any version') };
+eval { $v .= pmver('Params::Validate','any version') };
 eval { $v .= pmver('Pod::Coverage::TrustPod','any version') };
 eval { $v .= pmver('Test::Deep','any version') };
 eval { $v .= pmver('Test::Exception','any version') };

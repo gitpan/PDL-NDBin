@@ -1,6 +1,6 @@
 package PDL::NDBin;
 {
-  $PDL::NDBin::VERSION = '0.008'; # TRIAL
+  $PDL::NDBin::VERSION = '0.009';
 }
 # ABSTRACT: Multidimensional binning & histogramming
 
@@ -17,6 +17,9 @@ use Log::Any qw( $log );
 use Data::Dumper;
 use UUID::Tiny qw( :std );
 use POSIX qw( ceil );
+use Params::Validate qw( validate validate_pos validate_with ARRAYREF CODEREF HASHREF SCALAR );
+use Carp;
+use Class::Load qw( load_class );
 
 
 our @ISA = qw( Exporter );
@@ -31,10 +34,16 @@ my %valid_key = map { $_ => 1 } qw( axes vars );
 sub add_axis
 {
 	my $self = shift;
-	PDL::Core::barf( "odd number of elements for axis specification (did you use key => value?): @_" ) if @_ % 2;
-	my %params = @_;
+	my %params = validate( @_, {
+			max   => 0,
+			min   => 0,
+			n     => 0,
+			name  => 1,
+			pdl   => 0,
+			round => 0,
+			step  => 0,
+		} );
 	$log->tracef( 'adding axis with specs %s', \%params );
-	PDL::Core::barf( 'need at least a name for every axis' ) unless $params{name};
 	push @{ $self->{axes} }, \%params;
 }
 
@@ -42,10 +51,12 @@ sub add_axis
 sub add_var
 {
 	my $self = shift;
-	PDL::Core::barf( "odd number of elements for variable specification (did you use key => value?): @_" ) if @_ % 2;
-	my %params = @_;
+	my %params = validate( @_, {
+			action => { type => CODEREF | HASHREF | SCALAR },
+			name   => 1,
+			pdl    => 0,
+		} );
 	$log->tracef( 'adding variable with specs %s', \%params );
-	PDL::Core::barf( 'need at least a name for every variable' ) unless $params{name};
 	push @{ $self->{vars} }, \%params;
 }
 
@@ -53,25 +64,26 @@ sub add_var
 sub new
 {
 	my $class = shift;
-	my %args = @_;
-	$log->debug( 'new: arguments = ' . Dumper \%args ) if $log->is_debug;
+	my %params = validate( @_, {
+			axes => { optional => 1, type => ARRAYREF },
+			vars => { optional => 1, type => ARRAYREF },
+		} );
+	$log->debug( 'new: arguments = ' . Dumper \%params ) if $log->is_debug;
 	my $self = bless { axes => [], vars => [] }, $class;
 	# axes
-	$args{axes} ||= [];		# be sure we can dereference
-	my @axes = @{ $args{axes} };
+	$params{axes} ||= [];		# be sure we can dereference
+	my @axes = @{ $params{axes} };
 	for my $axis ( @axes ) {
-		my $name = shift @$axis;
+		my( $name ) = validate_pos( @$axis, 1, (0) x (@$axis - 1) );
+		shift @$axis; # remove name
 		$self->add_axis( name => $name, @$axis );
 	}
 	# vars
-	$args{vars} ||= [];		# be sure we can dereference
-	my @vars = @{ $args{vars} };
+	$params{vars} ||= [];		# be sure we can dereference
+	my @vars = @{ $params{vars} };
 	for my $var ( @vars ) {
-		if( @$var == 2 ) {
-			my( $name, $action ) = @$var;
-			$self->add_var( name => $name, action => $action );
-		}
-		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+		my( $name, $action ) = validate_pos( @$var, 1, 1 );
+		$self->add_var( name => $name, action => $action );
 	}
 	return $self;
 }
@@ -80,33 +92,49 @@ sub new
 sub axes { wantarray ? @{ $_[0]->{axes} } : $_[0]->{axes} }
 sub vars { wantarray ? @{ $_[0]->{vars} } : $_[0]->{vars} }
 
-# stolen from Log::Dispatch
-sub _require_dynamic
+sub _make_instance_hashref
 {
-	my $class = shift;
-	if( $class->VERSION ) {
-		$log->info( "$class already loaded" );
-		return;
-	}
-	local $@;
-	eval "require $class";
-	die $@ if $@;
+	my %params = validate_with(
+		params => \@_,
+		spec   => {
+			N       => 1,
+			class   => 1,
+			coderef => 0,
+		},
+		allow_extra => 1,
+	);
+	my $short_class = delete $params{class};
+	my $full_class = substr( $short_class, 0, 1 ) eq '+'
+		? substr( $short_class, 1 )
+		: "PDL::NDBin::Action::$short_class";
+	load_class( $full_class );
+	return $full_class->new( %params );
 }
 
 sub _make_instance
 {
-	my( $N, $arg ) = @_;
-	if( ref $arg eq 'CODE' ) {
-		my $class = "PDL::NDBin::Action::CodeRef";
-		_require_dynamic( $class );
-		return $class->new( $N, $arg );
+	my %params = validate( @_, {
+			action => 1,
+			N      => 1,
+		} );
+	if( ref $params{action} eq 'CODE' ) {
+		return _make_instance_hashref(
+			class   => '+PDL::NDBin::Action::CodeRef',
+			N       => $params{N},
+			coderef => $params{action},
+		);
+	}
+	elsif( ref $params{action} eq 'HASH' ) {
+		return _make_instance_hashref(
+			%{ $params{action} },
+			N => $params{N},
+		);
 	}
 	else {
-		my $class = substr( $arg, 0, 1 ) eq '+'
-			? substr( $arg, 1 )
-			: "PDL::NDBin::Action::$arg";
-		_require_dynamic( $class );
-		return $class->new( $N );
+		return _make_instance_hashref(
+			class => $params{action},
+			N     => $params{N},
+		);
 	}
 }
 
@@ -150,7 +178,7 @@ sub _check_pdl_length
 		# pdls, but until I have a better one, this will have to do
 		next if $v->{action} && ( ! defined $v->{pdl} || $v->{pdl}->isempty );
 		if( $v->{pdl}->nelem != $length ) {
-			PDL::Core::barf( join '', 'number of elements (',
+			croak( join '', 'number of elements (',
 				$v->{pdl}->nelem, ") of '$v->{name}'",
 				" is different from previous ($length)" );
 		}
@@ -167,7 +195,7 @@ sub autoscale_axis
 		return;
 	}
 	# first get & sanify the arguments
-	PDL::Core::barf( 'need coordinates' ) unless defined $axis->{pdl};
+	croak( 'need coordinates' ) unless defined $axis->{pdl};
 	$axis->{min} = $axis->{pdl}->min unless defined $axis->{min};
 
 
@@ -176,9 +204,9 @@ sub autoscale_axis
 		$axis->{min} = nlowmult( $axis->{round}, $axis->{min} );
 		$axis->{max} = nhimult(  $axis->{round}, $axis->{max} );
 	}
-	PDL::Core::barf( 'max < min is invalid' ) if $axis->{max} < $axis->{min};
+	croak( 'max < min is invalid' ) if $axis->{max} < $axis->{min};
 	if( $axis->{pdl}->type >= PDL::float ) {
-		PDL::Core::barf( 'cannot bin with min = max' ) if $axis->{min} == $axis->{max};
+		croak( 'cannot bin with min = max' ) if $axis->{min} == $axis->{max};
 	}
 	# calculate the range
 	# for floating-point data, we need to augment the range by 1 unit - see
@@ -189,15 +217,15 @@ sub autoscale_axis
 	}
 	# if step size has been supplied by user, check it
 	if( defined $axis->{step} ) {
-		PDL::Core::barf( 'step size must be > 0' ) unless $axis->{step} > 0;
+		croak( 'step size must be > 0' ) unless $axis->{step} > 0;
 		if( $axis->{pdl}->type < PDL::float && $axis->{step} < 1 ) {
-			PDL::Core::barf( "step size = $axis->{step} < 1 is not allowed when binning integral data" );
+			croak( "step size = $axis->{step} < 1 is not allowed when binning integral data" );
 		}
 	}
 	# number of bins I<n>
 	if( defined $axis->{n} ) {
-		PDL::Core::barf( 'number of bins must be > 0' ) unless $axis->{n} > 0;
-		PDL::Core::barf( 'number of bins must be integral' ) if ceil( $axis->{n} ) - $axis->{n} > 0;
+		croak( 'number of bins must be > 0' ) unless $axis->{n} > 0;
+		croak( 'number of bins must be integral' ) if ceil( $axis->{n} ) - $axis->{n} > 0;
 	}
 	else {
 		if( defined $axis->{step} ) {
@@ -223,7 +251,7 @@ sub autoscale_axis
 		# result of this calculation is guaranteed to be > 0
 		$axis->{step} = $range / $axis->{n};
 		if( $axis->{pdl}->type < PDL::float ) {
-			PDL::Core::barf( 'there are more bins than distinct values' ) if $axis->{step} < 1;
+			croak( 'there are more bins than distinct values' ) if $axis->{step} < 1;
 		}
 	}
 }
@@ -265,7 +293,7 @@ sub process
 	my $self = shift;
 
 	# sanity check
-	PDL::Core::barf( 'no axes supplied' ) unless @{ $self->axes };
+	croak( 'no axes supplied' ) unless @{ $self->axes };
 	# default action, when no variables are given, is to produce a histogram
 	$self->add_var( name => 'histogram', action => 'Count' ) unless @{ $self->vars };
 
@@ -288,9 +316,9 @@ sub process
 	$self->{n} = \@n;
 
 	my $N = reduce { $a * $b } @n; # total number of bins
-	PDL::Core::barf( 'I need at least one bin' ) unless $N;
+	croak( 'I need at least one bin' ) unless $N;
 	my @vars = map $_->{pdl}, $self->vars;
-	$self->{instances} ||= [ map { _make_instance $N, $_->{action} } $self->vars ];
+	$self->{instances} ||= [ map { _make_instance( N => $N, action => $_->{action} ) } $self->vars ];
 
 	#
 	{
@@ -299,7 +327,7 @@ sub process
 	}
 
 	# now visit all the bins
-	my $iter = PDL::NDBin::Iterator->new( \@n, \@vars, $idx );
+	my $iter = PDL::NDBin::Iterator->new( bins => \@n, array => \@vars, idx => $idx );
 	$log->debug( 'iterator object created: ' . Dumper $iter );
 	while( $iter->advance ) {
 		my $i = $iter->var;
@@ -357,8 +385,8 @@ sub _expand_axes
 			undef $hash; # do not collapse consecutive hashes into one, too confusing
 		}
 		elsif( @num = _consume { /^[-+]?(\d+(\.\d*)?|\.\d+)([Ee][-+]?\d+)?$/ } @_ ) {
-			PDL::Core::barf( 'no axis given' ) unless $hash;
-			PDL::Core::barf( "too many arguments to axis in `@num'" ) if @num > 3;
+			croak( 'no axis given' ) unless $hash;
+			croak( "too many arguments to axis in `@num'" ) if @num > 3;
 			# a series of floating-point numbers
 			$hash->{min}  = $num[0] if @num > 0;
 			$hash->{max}  = $num[1] if @num > 1;
@@ -367,15 +395,15 @@ sub _expand_axes
 		#elsif( @num = ( $_[0] =~ m{^((?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][-+]?\d+)?/)+$}g ) and shift ) {
 		#	DOES NOT WORK YET - TODO
 		#	print "GMT-style axis spec found! (@num)\n";
-		#	PDL::Core::barf( 'no axis given' ) unless $hash;
-		#	PDL::Core::barf( "too many arguments to axis in `@num'" ) if @num > 3;
+		#	croak( 'no axis given' ) unless $hash;
+		#	croak( "too many arguments to axis in `@num'" ) if @num > 3;
 		#	# a string specification of the form 'min/max/step', a la GMT
 		#	$hash->{min}  = $num[0] if @num > 0;
 		#	$hash->{max}  = $num[1] if @num > 1;
 		#	$hash->{step} = $num[2] if @num > 2;
 		#}
 		else {
-			PDL::Core::barf( "while expanding axes: invalid argument at `@_'" );
+			croak( "while expanding axes: invalid argument at `@_'" );
 		}
 	}
 	push @out, $hash if $hash;
@@ -404,12 +432,12 @@ sub ndbinning
 		my( $pdl, $step, $min, $n ) = splice @leading, 0, 4;
 		$binner->add_axis( name => _random_name, pdl => $pdl, step => $step, min => $min, n => $n );
 	}
-	if( @leading ) { PDL::Core::barf( "error parsing arguments in `@leading'" ) }
+	if( @leading ) { croak( "error parsing arguments in `@leading'" ) }
 
 	# remaining arguments are key => value pairs
 	my $args = { @_ };
 	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
-	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
+	croak( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
 	# axes
 	$args->{axes} ||= [];
@@ -426,7 +454,7 @@ sub ndbinning
 			my( $pdl, $action ) = @$var;
 			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
 		}
-		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+		else { croak( "wrong number of arguments for var: @$var" ) }
 	}
 
 	#
@@ -455,7 +483,7 @@ sub ndbin
 	# remaining arguments are key => value pairs
 	my $args = { @_ };
 	my @invalid_keys = grep ! $valid_key{ $_ }, keys %$args;
-	PDL::Core::barf( "invalid key(s) @invalid_keys" ) if @invalid_keys;
+	croak( "invalid key(s) @invalid_keys" ) if @invalid_keys;
 
 	# axes
 	$args->{axes} ||= [];
@@ -472,7 +500,7 @@ sub ndbin
 			my( $pdl, $action ) = @$var;
 			$binner->add_var( name => _random_name, pdl => $pdl, action => $action );
 		}
-		else { PDL::Core::barf( "wrong number of arguments for var: @$var" ) }
+		else { croak( "wrong number of arguments for var: @$var" ) }
 	}
 
 	$binner->process;
@@ -493,7 +521,7 @@ PDL::NDBin - Multidimensional binning & histogramming
 
 =head1 VERSION
 
-version 0.008
+version 0.009
 
 =head1 SYNOPSIS
 
@@ -709,7 +737,8 @@ The name of this variable.
 =item action
 
 The action to perform on this variable. May be either a code reference (a
-reference to a named or anonymous subroutine) or a class name.
+reference to a named or anonymous subroutine), a class name, or a hash
+reference. (See L<Actions> under L<IMPLEMENTATION NOTES> for more details.)
 
 =back
 
@@ -1278,10 +1307,10 @@ Here are some examples of flattening multidimensional bins into one dimension:
 
 =head2 Actions
 
-You are required to supply an action with every variable. An action can be
-either a code reference (i.e., a reference to a subroutine, or an anonymous
-subroutine), or the name of a class that implements the methods new(),
-process() and result().
+You are required to supply an action with every variable. An action can be a
+code reference (i.e., a reference to a subroutine, or an anonymous subroutine),
+the name of a class that implements the methods new(), process() and result(),
+or a hash reference.
 
 The actions will be called in the order they are given for each bin, before
 proceeding to the next bin. You can depend on this behaviour, for instance,
@@ -1326,6 +1355,23 @@ When supplying a class instead of an action reference, it is possible to
 compute multiple bins at once in one call to process(). This can be much more
 efficient than calling the action for every bin, especially if the loop can be
 coded in XS.
+
+=head3 Hash reference
+
+Specifying a hash reference is the same as specifying a class name, except that
+it allows you to pass additional parameters to the action class constructor.
+For instance, the specification
+
+	variable => { class => 'Avg', type => \&PDL::float }
+
+is almost the same as
+
+	variable => 'Avg',
+
+but with the type of the output piddle set to I<float>. This specification will
+be translated to the following constructor call:
+
+	PDL::NDBin::Action::Avg->new( N => $N, type => \&PDL::float )
 
 =head3 Exceptions in actions
 

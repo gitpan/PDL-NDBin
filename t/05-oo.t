@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 137;
+use Test::More tests => 143;
 use Test::PDL 0.04 qw( is_pdl :deep );
 use Test::Exception;
 use Test::NoWarnings;
@@ -50,7 +50,7 @@ lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
 	ok $obj, 'no arguments';
 	isa_ok $obj, 'PDL::NDBin';
 }
-dies_ok { PDL::NDBin->new( axes => [ [ 0 ] ] ) } 'no axis name';
+dies_ok { PDL::NDBin->new( axes => [ [ ] ] ) } 'no axis name';
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy' ] ] ) } 'no specs';
 dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0 ] ] ) } 'wrong specs';
 dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', 0, 0, 1 ] ] ) } 'oldstyle specs';
@@ -64,10 +64,7 @@ lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
 				     [ 'dummy' ] ] ) } 'no full specs for second axis';
 lives_ok { PDL::NDBin->new( axes => [ [ 'dummy', step=>0, min=>0, n=>1 ],
 				     [ 'dummy', step=>0 ] ] ) } 'no full specs for second axis';
-TODO: {
-	local $TODO = 'needs to wait until full Params::Validate validation';
-	dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', unknown=>3 ] ] ) } 'unknown key in axis spec';
-}
+dies_ok { PDL::NDBin->new( axes => [ [ 'dummy', unknown=>3 ] ] ) } 'unknown key in axis spec';
 
 # return values
 $binner = PDL::NDBin->new( axes => [ [ u => (step=>1,min=>0,n=>10) ] ] );
@@ -319,6 +316,58 @@ for my $class ( __PACKAGE__->actions ) {
 }
 
 #
+# MORE TESTS WITH ACTIONS
+#
+note 'MORE TESTS WITH ACTIONS';
+
+{
+	my $u = float( 0.785, 0.025, 0.385, 0.219, 0.133, 0.405, 0.761, 0.777,
+		0.704, 0.346, 0.267, 0.051, 0.129, 0.485, 0.227, 0.216, 0.673,
+		0.433, 0.581, 0.990 );
+	my $x = zeroes long, $u->nelem;
+	my $avg = $u->sum/$u->nelem;
+	my $coderef = sub { shift->selection->avg };
+	my %table = (
+		'action coderef' => {
+			vars     => [ [ 'u', $coderef ] ],
+			# type is 'float' since $u is float
+			expected => { u => test_float( [$avg] ) },
+		},
+		'action coderef, specified as hashref' => {
+			vars     => [ [ 'u', { class => 'CodeRef', coderef => $coderef } ] ],
+			expected => { u => test_float( [$avg] ) },
+		},
+		'action coderef, specified as hashref with type' => {
+			vars     => [ [ 'u', { class => 'CodeRef', coderef => $coderef, type => \&PDL::double } ] ],
+			expected => { u => test_double( [$avg] ) },
+		},
+		'action class' => {
+			vars     => [ [ 'u', 'Avg' ] ],
+			# type is 'double' since 'Avg' initializes to double
+			expected => { u => test_double( [$avg] ) },
+		},
+		'action class with hashref' => {
+			vars     => [ [ 'u', { class => 'Avg' } ] ],
+			expected => { u => test_double( [$avg] ) },
+		},
+		'action class with hashref and parameters' => {
+			vars     => [ [ 'u', { class => 'Avg', type => \&PDL::float } ] ],
+			expected => { u => test_float( [$avg] ) },
+		},
+	);
+	while( my($name,$data) = each %table ) {
+		my $binner = PDL::NDBin->new(
+			axes => [ [ 'x', n=>1 ] ],
+			vars => $data->{vars},
+		);
+		$binner->process( x => $x, u => $u );
+		my $got = $binner->output;
+		my $expected = $data->{expected};
+		cmp_deeply $got, $expected, "extended action tests: $name";
+	}
+}
+
+#
 # DATA FEEDING & AUTOSCALING
 #
 note 'DATA FEEDING & AUTOSCALING';
@@ -558,8 +607,8 @@ note 'CONCATENATION';
 	my $u4 = pdl( 8.28086562230297, 46.8340738920247, -37.15661354396 ); # 3 random values [-50:50]
 	my $N = 42;
 	my $u = $u0->append( $u1 )->append( $u2 )->append( $u3 )->append( $u4 );
-	cmp_ok( $N, '>', 0, 'there are values to test' ) or BAIL_OUT( 'test is corrupt' );
-	ok( $u->nelem == $N, 'number of values is consistent' ) or BAIL_OUT( 'test is corrupt' );
+	cmp_ok( $N, '>', 0, 'there are values to test' );
+	ok( $u->nelem == $N, 'number of values is consistent' );
 	for my $class ( __PACKAGE__->actions ) {
 		# CodeRef is not supposed to be able to concatenate results
 		next if $class eq 'PDL::NDBin::Action::CodeRef';

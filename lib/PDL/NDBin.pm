@@ -1,6 +1,6 @@
 package PDL::NDBin;
 {
-  $PDL::NDBin::VERSION = '0.010';
+  $PDL::NDBin::VERSION = '0.011';
 }
 # ABSTRACT: Multidimensional binning & histogramming
 
@@ -521,7 +521,7 @@ PDL::NDBin - Multidimensional binning & histogramming
 
 =head1 VERSION
 
-version 0.010
+version 0.011
 
 =head1 SYNOPSIS
 
@@ -738,11 +738,11 @@ The name of this variable.
 
 The action to perform on this variable. May be either a code reference (a
 reference to a named or anonymous subroutine), a class name, or a hash
-reference. (See L<Actions> under L<IMPLEMENTATION NOTES> for more details.)
+reference. (See I<Actions> under L<IMPLEMENTATION NOTES> for more details.)
 
 =back
 
-The action classes that are available as of PDL::NDBin v0.008 are:
+The action classes that are available as of PDL::NDBin v0.011 are:
 
 =over 4
 
@@ -753,6 +753,14 @@ L<PDL::NDBin::Action::Avg>
 =item *
 
 L<PDL::NDBin::Action::Count>
+
+=item *
+
+L<PDL::NDBin::Action::Max>
+
+=item *
+
+L<PDL::NDBin::Action::Min>
 
 =item *
 
@@ -1362,7 +1370,7 @@ Specifying a hash reference is the same as specifying a class name, except that
 it allows you to pass additional parameters to the action class constructor.
 For instance, the specification
 
-	variable => { class => 'Avg', type => \&PDL::float }
+	variable => { class => 'Avg', type => float }
 
 is almost the same as
 
@@ -1371,7 +1379,7 @@ is almost the same as
 but with the type of the output piddle set to I<float>. This specification will
 be translated to the following constructor call:
 
-	PDL::NDBin::Action::Avg->new( N => $N, type => \&PDL::float )
+	PDL::NDBin::Action::Avg->new( N => $N, type => float )
 
 =head3 Exceptions in actions
 
@@ -2082,10 +2090,6 @@ The documentation can be expanded and improved in a few places.
 
 The axes should be refactored into objects instead of bare hashrefs, with
 methods such as labels(), n(), step(), etc.
-
-=item *
-
-The action classes I<Min> and I<Max> would be useful and easy to add.
 
 =back
 

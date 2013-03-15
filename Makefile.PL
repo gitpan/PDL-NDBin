@@ -14,8 +14,9 @@ my %WriteMakefileArgs = (
   "BUILD_REQUIRES" => {
     "File::Find" => 0,
     "File::Temp" => 0,
-    "Module::Pluggable" => 0,
-    "PDL" => 0,
+    "Module::Pluggable" => "3.1",
+    "PDL" => "2.004",
+    "PDL::Types" => 0,
     "Test::Deep" => 0,
     "Test::Exception" => 0,
     "Test::More" => "0.88",
@@ -47,7 +48,7 @@ my %WriteMakefileArgs = (
     "strict" => 0,
     "warnings" => 0
   },
-  "VERSION" => "0.010",
+  "VERSION" => "0.011",
   "test" => {
     "TESTS" => "t/*.t"
   }

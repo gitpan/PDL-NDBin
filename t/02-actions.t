@@ -2,12 +2,13 @@
 
 use strict;
 use warnings;
-use Test::More tests => 159;
+use Test::More tests => 216;
 use Test::PDL;
 use Test::Exception;
 use Test::NoWarnings;
 use Carp qw( confess );
-use PDL;
+use PDL 2.004; # at least 2.4.0 for 'types' in PDL::Types
+use PDL::Types;
 use PDL::NDBin::Iterator;
 use Module::Pluggable sub_name    => 'actions',
 		      require     => 1,
@@ -31,6 +32,11 @@ sub iter
 	PDL::NDBin::Iterator->new( bins => [ $N ], array => [ $var ], idx => $idx );
 }
 
+# systematically list all types used by PDL (should be 7 types in total)
+my @all_types = PDL::Types::types;
+# mostly here as a reminder to fix the (number of) tests should PDL include more types
+cmp_ok @all_types, '==', 7, 'there are seven basic PDL data types';
+
 # variable declarations
 my ( $expected, $got, $N, $x, $y, @u, @v, $obj, $iter );
 
@@ -42,11 +48,12 @@ note 'SETUP';
 	my %plugins = map { $_ => 1 } __PACKAGE__->actions;
 	note 'registered plugins: ', join ', ' => keys %plugins;
 	for my $p ( qw(	PDL::NDBin::Action::Count  PDL::NDBin::Action::Sum
+			PDL::NDBin::Action::Max    PDL::NDBin::Action::Min
 			PDL::NDBin::Action::Avg    PDL::NDBin::Action::StdDev ) )
 	{
 		ok $plugins{ $p }, "$p is there";
 		delete $plugins{ $p };
-		# create wrapper function around the class
+		# create wrapper function 'ifunc' around the class '::Func'
 		my $function = do { $p =~ /::(\w+)$/; 'i' . lc $1 };
 		no strict 'refs';
 		*$function = sub {
@@ -87,6 +94,8 @@ my %test_args = (
 	'PDL::NDBin::Action::CodeRef' => [ N => $N, coderef => sub {} ],
 	'PDL::NDBin::Action::Avg'     => [ N => $N ],
 	'PDL::NDBin::Action::Count'   => [ N => $N ],
+	'PDL::NDBin::Action::Max'     => [ N => $N ],
+	'PDL::NDBin::Action::Min'     => [ N => $N ],
 	'PDL::NDBin::Action::StdDev'  => [ N => $N ],
 	'PDL::NDBin::Action::Sum'     => [ N => $N ],
 );
@@ -114,13 +123,9 @@ $y = long( @v );
 
 #
 note '   function = icount';
-cmp_ok( icount( iter $x->byte, $y, $N )->type, '==', long, 'return type is long for input type byte' );
-cmp_ok( icount( iter $x->short, $y, $N )->type, '==', long, 'return type is long for input type short' );
-cmp_ok( icount( iter $x->ushort, $y, $N )->type, '==', long, 'return type is long for input type ushort' );
-cmp_ok( icount( iter $x->long, $y, $N )->type, '==', long, 'return type is long for input type long' );
-cmp_ok( icount( iter $x->longlong, $y, $N )->type, '==', long, 'return type is long for input type longlong' );
-cmp_ok( icount( iter $x->float, $y, $N )->type, '==', long, 'return type is long for input type float' );
-cmp_ok( icount( iter $x->double, $y, $N )->type, '==', long, 'return type is long for input type double' );
+for my $type ( @all_types ) {
+	cmp_ok( icount( iter $x->convert($type), $y, $N )->type, '==', long, "return type is long for input type $type" );
+}
 
 #
 note '   function = isum';
@@ -133,49 +138,40 @@ cmp_ok( isum( iter $x->float, $y, $N )->type, '==', float, 'return type is float
 cmp_ok( isum( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
 
 #
-note '   function = iavg';
-cmp_ok( iavg( iter $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
-cmp_ok( iavg( iter $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
-cmp_ok( iavg( iter $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
-cmp_ok( iavg( iter $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
-cmp_ok( iavg( iter $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
-cmp_ok( iavg( iter $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
-cmp_ok( iavg( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
+for my $what ( ['iavg', \&iavg], ['istddev', \&istddev] ) {
+	note '   function = ' . $what->[0];
+	for my $type ( @all_types ) {
+		cmp_ok( $what->[1]->( iter $x->convert($type), $y, $N )->type, '==', double, "return type is double for input type $type" );
+	}
+}
 
 #
-note '   function = istddev';
-cmp_ok( istddev( iter $x->byte, $y, $N )->type, '==', double, 'return type is double for input type byte' );
-cmp_ok( istddev( iter $x->short, $y, $N )->type, '==', double, 'return type is double for input type short' );
-cmp_ok( istddev( iter $x->ushort, $y, $N )->type, '==', double, 'return type is double for input type ushort' );
-cmp_ok( istddev( iter $x->long, $y, $N )->type, '==', double, 'return type is double for input type long' );
-cmp_ok( istddev( iter $x->longlong, $y, $N )->type, '==', double, 'return type is double for input type longlong' );
-cmp_ok( istddev( iter $x->float, $y, $N )->type, '==', double, 'return type is double for input type float' );
-cmp_ok( istddev( iter $x->double, $y, $N )->type, '==', double, 'return type is double for input type double' );
+for my $class ( qw( PDL::NDBin::Action::Max PDL::NDBin::Action::Min ) ) {
+	note "   class = $class";
+	for my $type ( @all_types ) {
+		$obj = $class->new( N => $N );
+		$obj->process( iter $x->convert($type), $y, $N );
+		cmp_ok $obj->result->type, '==', $type, "return type is $type for input type $type";
+	}
+}
 
 #
 note '   class = PDL::NDBin::Action::CodeRef';
-for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
+for my $type ( @all_types ) {
 	$obj = PDL::NDBin::Action::CodeRef->new( N => $N, coderef => sub {} );
-	$obj->process( iter $x->$type, $y, $N );
-	my $ref = "PDL::$type";
-	no strict 'refs';
-	cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for input type $type";
+	$obj->process( iter $x->convert($type), $y, $N );
+	cmp_ok $obj->result->type, '==', $type, "return type is $type for input type $type";
 }
 
 #
 note '   type set by user';
 for my $class ( __PACKAGE__->actions ) {
-	for my $type ( qw( byte short ushort ushort long longlong float double ) ) {
-		my $ref = do {
-			no strict 'refs';
-			my $s = "PDL::$type";
-			\&$s;
-		};
+	for my $type ( @all_types ) {
 		my @args = ( N => $N );
 		push @args, coderef => sub {} if $class eq 'PDL::NDBin::Action::CodeRef';
-		$obj = $class->new( @args, type => $ref );
-		$obj->process( iter $x->$type, $y, $N );
-		cmp_ok $obj->result->type, '==', $ref->(), "return type is $type for class $class with type => $type";
+		$obj = $class->new( @args, type => $type );
+		$obj->process( iter $x->convert($type), $y, $N );
+		cmp_ok $obj->result->type, '==', $type, "return type is $type for class $class with type => $type";
 	}
 }
 
@@ -212,6 +208,24 @@ $got = isum( iter $x, $y, $N );
 is_pdl $got, $expected, "isum, input type short";
 $got = isum( iter $x->float, $y, $N );
 is_pdl $got, $expected->float, "isum, input type float";
+
+# imax
+$expected = long( 9,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imax( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imax, input type short";
+$got = imax( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imax, input type float";
+$got = imax( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imax, input type double";
+
+# imin
+$expected = long( 4,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imin( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imin, input type short";
+$got = imin( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imin, input type float";
+$got = imin( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imin, input type double";
 
 # iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -277,6 +291,24 @@ is_pdl $got, $expected, "isum with bad values, input type short";
 $got = isum( iter $x->float, $y, $N );
 is_pdl $got, $expected->float, "isum with bad values, input type float";
 
+# imax
+$expected = long( 9,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imax( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imax with bad values, input type short";
+$got = imax( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imax with bad values, input type float";
+$got = imax( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imax with bad values, input type double";
+
+# imin
+$expected = long( 4,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imin( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imin with bad values, input type short";
+$got = imin( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imin with bad values, input type float";
+$got = imin( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imin with bad values, input type double";
+
 # iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
 $got = iavg( iter $x, $y, $N );
@@ -335,6 +367,24 @@ $got = isum( iter $x, $y, $N );
 is_pdl $got, $expected, "isum with bad bin numbers, input type short";
 $got = isum( iter $x->float, $y, $N );
 is_pdl $got, $expected->float, "isum with bad bin numbers, input type float";
+
+# imax
+$expected = long( 9,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imax( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imax with bad bin numbers, input type short";
+$got = imax( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imax with bad bin numbers, input type float";
+$got = imax( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imax with bad bin numbers, input type double";
+
+# imin
+$expected = long( 4,7,-1,8 )->inplace->setvaltobad( -1 );
+$got = imin( iter $x->short, $y, $N );
+is_pdl $got, $expected->short, "imin with bad bin numbers, input type short";
+$got = imin( iter $x->float, $y, $N );
+is_pdl $got, $expected->float, "imin with bad bin numbers, input type float";
+$got = imin( iter $x->double, $y, $N );
+is_pdl $got, $expected->double, "imin with bad bin numbers, input type double";
 
 # iavg
 $expected = pdl( 6,7,-1,8 )->inplace->setvaltobad( -1 );
@@ -429,6 +479,12 @@ is_pdl $got, $expected, "cross-check icount() with ngood()";
 $expected = apply( $x, $y, $N, \&sum );
 $got = isum( iter $x, $y, $N );
 is_pdl $got, $expected, "cross-check isum() with sum()";
+$expected = apply( $x, $y, $N, \&max );
+$got = imax( iter $x, $y, $N );
+is_pdl $got, $expected, "cross-check imax() with max()";
+$expected = apply( $x, $y, $N, \&min );
+$got = imin( iter $x, $y, $N );
+is_pdl $got, $expected, "cross-check imin() with min()";
 $expected = apply( $x, $y, $N, sub { ($_[0]->stats)[0] } );
 $got = iavg( iter $x, $y, $N );
 is_pdl $got, $expected, "cross-check iavg() with stats()";

@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::StdDev;
 {
-  $PDL::NDBin::Action::StdDev::VERSION = '0.010';
+  $PDL::NDBin::Action::StdDev::VERSION = '0.011';
 }
 # ABSTRACT: Action for PDL::NDBin that computes standard deviation
 
@@ -9,7 +9,7 @@ use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Actions_PP;
-use Params::Validate qw( validate CODEREF SCALAR );
+use Params::Validate qw( validate OBJECT SCALAR );
 
 
 sub new
@@ -17,7 +17,7 @@ sub new
 	my $class = shift;
 	my $self = validate( @_, {
 			N    => { type => SCALAR, regex => qr/^\d+$/ },
-			type => { type => CODEREF, default => \&PDL::double }
+			type => { type => OBJECT, isa => 'PDL::Type', default => PDL::double }
 		} );
 	return bless $self, $class;
 }
@@ -27,7 +27,7 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	$self->{out} = PDL->zeroes( $self->{type}->(), $self->{N} ) unless defined $self->{out};
+	$self->{out} = PDL->zeroes( $self->{type}, $self->{N} ) unless defined $self->{out};
 	$self->{count} = PDL->zeroes( PDL::long, $self->{N} ) unless defined $self->{count};
 	# as the internal computations happen in double, the type of 'avg' sticks to double
 	$self->{avg} = PDL->zeroes( PDL::double, $self->{N} ) unless defined $self->{avg};
@@ -58,7 +58,7 @@ PDL::NDBin::Action::StdDev - Action for PDL::NDBin that computes standard deviat
 
 =head1 VERSION
 
-version 0.010
+version 0.011
 
 =head1 DESCRIPTION
 
@@ -70,7 +70,7 @@ This class implements an action for PDL::NDBin.
 
 	my $instance = PDL::NDBin::Action::StdDev->new(
 		N    => $N,
-		type => \&PDL::double,   # default
+		type => double,   # default
 	);
 
 Construct an instance for this action. Requires the number of bins $N as input.

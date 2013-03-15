@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::CodeRef;
 {
-  $PDL::NDBin::Action::CodeRef::VERSION = '0.010';
+  $PDL::NDBin::Action::CodeRef::VERSION = '0.011';
 }
 # ABSTRACT: Action for PDL::NDBin that calls user sub
 
@@ -8,7 +8,7 @@ package PDL::NDBin::Action::CodeRef;
 use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
-use Params::Validate qw( validate CODEREF SCALAR UNDEF );
+use Params::Validate qw( validate CODEREF OBJECT SCALAR UNDEF );
 
 
 sub new
@@ -17,7 +17,7 @@ sub new
 	my $self = validate( @_, {
 			N       => { type => SCALAR, regex => qr/^\d+$/ },
 			coderef => { type => CODEREF },
-			type    => { type => CODEREF | UNDEF, optional => 1 }
+			type    => { type => OBJECT | UNDEF, isa => 'PDL::Type', optional => 1 }
 		} );
 	return bless $self, $class;
 }
@@ -28,7 +28,7 @@ sub process
 	my $self = shift;
 	my $iter = shift;
 	if( ! defined $self->{out} ) {
-		my $type = $self->{type} ? $self->{type}->() : $iter->data->type;
+		my $type = defined $self->{type} ? $self->{type} : $iter->data->type;
 		$self->{out} = PDL->zeroes( $type, $self->{N} )->setbadif( 1 );
 	}
 	my $value = $self->{coderef}->( $iter );
@@ -55,7 +55,7 @@ PDL::NDBin::Action::CodeRef - Action for PDL::NDBin that calls user sub
 
 =head1 VERSION
 
-version 0.010
+version 0.011
 
 =head1 DESCRIPTION
 
@@ -72,7 +72,7 @@ just to implement an action).
 	my $instance = PDL::NDBin::Action::CodeRef->new(
 		N       => $N,
 		coderef => $coderef,
-		type    => \&PDL::double,   # optional
+		type    => double,   # optional
 	);
 
 Construct an instance for this action. Accepts three parameters:

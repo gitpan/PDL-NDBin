@@ -1,15 +1,15 @@
-package PDL::NDBin::Action::Count;
+package PDL::NDBin::Action::Max;
 {
-  $PDL::NDBin::Action::Count::VERSION = '0.011';
+  $PDL::NDBin::Action::Max::VERSION = '0.011';
 }
-# ABSTRACT: Action for PDL::NDBin that counts elements
+# ABSTRACT: Action for PDL::NDBin that computes maximum
 
 
 use strict;
 use warnings;
 use PDL::Lite;		# do not import any functions into this namespace
 use PDL::NDBin::Actions_PP;
-use Params::Validate qw( validate OBJECT SCALAR );
+use Params::Validate qw( validate OBJECT SCALAR UNDEF );
 
 
 sub new
@@ -17,7 +17,7 @@ sub new
 	my $class = shift;
 	my $self = validate( @_, {
 			N    => { type => SCALAR, regex => qr/^\d+$/ },
-			type => { type => OBJECT, isa => 'PDL::Type', default => PDL::long }
+			type => { type => OBJECT | UNDEF, isa => 'PDL::Type', optional => 1 }
 		} );
 	return bless $self, $class;
 }
@@ -27,8 +27,11 @@ sub process
 {
 	my $self = shift;
 	my $iter = shift;
-	$self->{out} = PDL->zeroes( $self->{type}, $self->{N} ) unless defined $self->{out};
-	PDL::NDBin::Actions_PP::_icount_loop( $iter->data, $iter->idx, $self->{out}, $self->{N} );
+	if( ! defined $self->{out} ) {
+		my $type = defined $self->{type} ? $self->{type} : $iter->data->type;
+		$self->{out} = PDL->zeroes( $type, $self->{N} )->setbadif( 1 );
+	}
+	PDL::NDBin::Actions_PP::_imax_loop( $iter->data, $iter->idx, $self->{out}, $self->{N} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
 	$iter->var_active( 0 );
@@ -50,7 +53,7 @@ __END__
 
 =head1 NAME
 
-PDL::NDBin::Action::Count - Action for PDL::NDBin that counts elements
+PDL::NDBin::Action::Max - Action for PDL::NDBin that computes maximum
 
 =head1 VERSION
 
@@ -64,14 +67,14 @@ This class implements an action for PDL::NDBin.
 
 =head2 new()
 
-	my $instance = PDL::NDBin::Action::Count->new(
+	my $instance = PDL::NDBin::Action::Max->new(
 		N    => $N,
-		type => long,   # default
+		type => double,   # optional
 	);
 
 Construct an instance for this action. Requires the number of bins $N as input.
-Optionally allows the type of the output piddle to be set (defaults to
-I<long>).
+Optionally allows the type of the output piddle to be set (defaults to the type
+of the variable this instance is associated with).
 
 =head2 process()
 

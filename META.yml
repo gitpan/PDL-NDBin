@@ -1,0 +1,51 @@
+---
+abstract: 'Multidimensional binning & histogramming'
+author:
+  - 'Edward Baudrez <ebaudrez@cpan.org>'
+build_requires:
+  File::Find: 0
+  File::Temp: 0
+  Module::Pluggable: 3.1
+  PDL: 2.004
+  PDL::Types: 0
+  Test::Deep: 0
+  Test::Exception: 0
+  Test::More: 0.88
+  Test::NoWarnings: 0
+  Test::PDL: 0.04
+configure_requires:
+  ExtUtils::MakeMaker: 6.30
+dynamic_config: 0
+generated_by: 'Dist::Zilla version 4.300030, CPAN::Meta::Converter version 2.120921'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: PDL-NDBin
+no_index:
+  directory:
+    - examples
+    - t
+    - tools
+requires:
+  Carp: 0
+  Class::Load: 0
+  Data::Dumper: 0
+  Exporter: 0
+  List::MoreUtils: 0
+  List::Util: 0
+  Log::Any: 0
+  Math::Round: 0
+  PDL::Lite: 0
+  POSIX: 0
+  Params::Validate: 0
+  UUID::Tiny: 0
+  XSLoader: 0
+  integer: 0
+  strict: 0
+  warnings: 0
+resources:
+  bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=PDL-NDBin
+  homepage: https://metacpan.org/release/PDL-NDBin
+  repository: git://github.com/ebaudrez/pdl-ndbin.git
+version: 0.011

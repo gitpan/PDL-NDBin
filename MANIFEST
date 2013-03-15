@@ -2,6 +2,7 @@ Changes
 LICENSE
 MANIFEST
 MANIFEST.SKIP
+META.yml
 Makefile.PL
 README
 dist.ini
@@ -20,6 +21,8 @@ lib/PDL/NDBin.pm
 lib/PDL/NDBin/Action/Avg.pm
 lib/PDL/NDBin/Action/CodeRef.pm
 lib/PDL/NDBin/Action/Count.pm
+lib/PDL/NDBin/Action/Max.pm
+lib/PDL/NDBin/Action/Min.pm
 lib/PDL/NDBin/Action/StdDev.pm
 lib/PDL/NDBin/Action/Sum.pm
 lib/PDL/NDBin/Iterator.pm

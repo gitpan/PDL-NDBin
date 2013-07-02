@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::StdDev;
 {
-  $PDL::NDBin::Action::StdDev::VERSION = '0.011';
+  $PDL::NDBin::Action::StdDev::VERSION = '0.012';
 }
 # ABSTRACT: Action for PDL::NDBin that computes standard deviation
 
@@ -58,7 +58,7 @@ PDL::NDBin::Action::StdDev - Action for PDL::NDBin that computes standard deviat
 
 =head1 VERSION
 
-version 0.011
+version 0.012
 
 =head1 DESCRIPTION
 

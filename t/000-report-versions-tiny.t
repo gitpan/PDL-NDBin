@@ -66,6 +66,7 @@ eval { $v .= pmver('PDL::Types','any version') };
 eval { $v .= pmver('POSIX','any version') };
 eval { $v .= pmver('Params::Validate','any version') };
 eval { $v .= pmver('Pod::Coverage::TrustPod','any version') };
+eval { $v .= pmver('Test::CPAN::Changes','0.19') };
 eval { $v .= pmver('Test::Deep','any version') };
 eval { $v .= pmver('Test::Exception','any version') };
 eval { $v .= pmver('Test::More','0.88') };

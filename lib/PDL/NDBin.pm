@@ -1,6 +1,6 @@
 package PDL::NDBin;
 {
-  $PDL::NDBin::VERSION = '0.012';
+  $PDL::NDBin::VERSION = '0.013';
 }
 # ABSTRACT: Multidimensional binning & histogramming
 
@@ -515,13 +515,15 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 PDL::NDBin - Multidimensional binning & histogramming
 
 =head1 VERSION
 
-version 0.012
+version 0.013
 
 =head1 SYNOPSIS
 
@@ -562,7 +564,7 @@ version 0.012
 	# in 3 bins with a width of 1, starting at 0:
 	my $histogram = ndbinning( pdl( 1,1,2 ), 1, 0, 3 );
 	# returns the one-dimensional histogram
-	#    long( 0,2,1 )
+	#    indx( 0,2,1 )
 
 	# bin the values
 	$x = pdl( 1,1,1,2,2 );
@@ -571,7 +573,7 @@ version 0.012
 	my $histogram = ndbinning( $x => (1,0,3),
 	                           $y => (1,0,3) );
 	# returns the two-dimensional histogram
-	#    long( [0,0,0],
+	#    indx( [0,0,0],
 	#          [0,2,2],
 	#          [0,1,0] )
 
@@ -596,7 +598,7 @@ on the values in the bins? It is actually not that difficult to perform the
 binning by hand. The key is to associate a bin number with every data value.
 With fixed-size bins of 0.1 mm wide, that is accomplished with
 
-	my $bin_numbers = PDL::long( $particles/0.1 );
+	my $bin_numbers = PDL::indx( $particles/0.1 );
 
 (Note that the formulation above does not take care of data beyond 10 mm, but
 PDL::NDBin does.) We now have two arrays of data: the actual particle sizes in
@@ -604,7 +606,7 @@ $particles, and the bin numbers associated with every data value in
 $bin_numbers. The histogram could now be produced with the following loop, $N
 being 100:
 
-	my $histogram = zeroes( long, $N );
+	my $histogram = zeroes( indx, $N );
 	for my $bin ( 0 .. $N-1 ) {
 		my $want = which( $bin_numbers == $bin );
 		$histogram->set( $bin, $want->nelem );
@@ -614,7 +616,7 @@ But, once we have the indices of the data values corresponding to any bin, it
 is a small matter to extend the loop to actually extract the data values in the
 bin. A user-supplied subroutine can then be invoked on the values in every bin:
 
-	my $output = zeroes( long, $N )->setbadif( 1 );
+	my $output = zeroes( indx, $N )->setbadif( 1 );
 	for my $bin ( 0 .. $N-1 ) {
 		my $want = which( $bin_numbers == $bin );
 		my $selection = $particles->index( $want );
@@ -638,7 +640,7 @@ along both latitude and longitude:
 	my( $latitude, $longitude ); # somehow get these data as 1-D vars
 	my $flattened = 0;
 	for my $var ( $latitude, $longitude ) {
-		my $bin_numbers = long( ($var - $min)/$step );
+		my $bin_numbers = indx( ($var - $min)/$step );
 		$bin_numbers->inplace->clip( 0, $n-1 );
 		$flattened = $flattened * $n + $bin_numbers;
 	}
@@ -667,6 +669,15 @@ ALSO> and further).
 
 Please note that, although I do not anticipate major API changes, the interface
 and implementation are subject to change.
+
+=head1 64-BIT SUPPORT
+
+PDL::NDBin will now install fine on recent PDL versions (2.007 or later) with
+64-bit support. However, 64-bit support has not been tested very well (yet).
+
+Note that PDL::NDBin should continue to work with earlier versions of PDL. In
+that case, the I<indx> type does not exist, and you should mentally replace it
+with I<long> in the documentation.
 
 =head1 METHODS
 
@@ -994,9 +1005,9 @@ emulated, i.e., an I<n>-dimensional histogram is produced. This function,
 although more flexible than the former two, is likely slower. If all you need
 is a one- or two-dimensional histogram, use histogram() and histogram2d()
 instead. Note that, when no variables are supplied, the returned histogram is
-of type I<long>, in contrast with histogram() and histogram2d(). The
-histogramming is achieved by passing an action which simply counts the number
-of elements in the bin.
+of type I<indx> (or I<long> if your PDL doesn't have 64-bit support), in
+contrast with histogram() and histogram2d(). The histogramming is achieved by
+passing an action which simply counts the number of elements in the bin.
 
 Unlike the output of output(), the resulting piddles are output as an array
 reference, in the same order as the variables passed in. There are as many
@@ -1029,9 +1040,9 @@ If no variables are supplied, the behaviour of hist() is emulated, i.e., an
 I<n>-dimensional histogram is produced. This function, although more flexible
 than the other, is likely slower. If all you need is a one-dimensional
 histogram, use hist() instead. Note that, when no variables are supplied, the
-returned histogram is of type I<long>, in contrast with hist(). The
-histogramming is achieved by passing an action which simply counts the number
-of elements in the bin.
+returned histogram is of type I<indx> (or I<long> if your PDL doesn't have
+64-bit support), in contrast with hist(). The histogramming is achieved by
+passing an action which simply counts the number of elements in the bin.
 
 Unlike the output of output(), the resulting piddles are output as an array
 reference, in the same order as the variables passed in. There are as many
@@ -1453,9 +1464,9 @@ The calculation of the number of bins is based on the formula
 
 but needs to be modified. First, I<n> calculated in this way may well be
 fractional. When I<n> is ultimately used in the binning, it is converted to
-I<int> by truncating. To have sufficient bins, I<n> must be rounded up to the
-next integer. Second, the computation of I<n> is and should be different for
-floating-point data and integral data.
+integral type by truncating. To have sufficient bins, I<n> must be rounded up
+to the next integer. Second, the computation of I<n> is and should be different
+for floating-point data and integral data.
 
 For floating-point data, I<n> is calculated as follows:
 

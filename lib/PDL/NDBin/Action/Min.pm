@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::Min;
 {
-  $PDL::NDBin::Action::Min::VERSION = '0.012';
+  $PDL::NDBin::Action::Min::VERSION = '0.013';
 }
 # ABSTRACT: Action for PDL::NDBin that computes minimum
 
@@ -51,13 +51,15 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 PDL::NDBin::Action::Min - Action for PDL::NDBin that computes minimum
 
 =head1 VERSION
 
-version 0.012
+version 0.013
 
 =head1 DESCRIPTION
 

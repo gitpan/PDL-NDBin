@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::Avg;
 {
-  $PDL::NDBin::Action::Avg::VERSION = '0.012';
+  $PDL::NDBin::Action::Avg::VERSION = '0.013';
 }
 # ABSTRACT: Action for PDL::NDBin that computes average
 
@@ -28,7 +28,7 @@ sub process
 	my $self = shift;
 	my $iter = shift;
 	$self->{out} = PDL->zeroes( $self->{type}, $self->{N} ) unless defined $self->{out};
-	$self->{count} = PDL->zeroes( PDL::long, $self->{N} ) unless defined $self->{count};
+	$self->{count} = PDL->zeroes( defined(&PDL::indx) ? PDL::indx() : PDL::long, $self->{N} ) unless defined $self->{count};
 	PDL::NDBin::Actions_PP::_iavg_loop( $iter->data, $iter->idx, $self->{out}, $self->{count}, $self->{N} );
 	# as the plugin processes all bins at once, every variable
 	# needs to be visited only once
@@ -40,7 +40,7 @@ sub process
 sub result
 {
 	my $self = shift;
-	PDL::NDBin::Actions_PP::_setnulltobad( $self->{count}, $self->{out} );
+	$self->{out}->inplace->_setnulltobad( $self->{count} );
 	return $self->{out};
 }
 
@@ -50,13 +50,15 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 PDL::NDBin::Action::Avg - Action for PDL::NDBin that computes average
 
 =head1 VERSION
 
-version 0.012
+version 0.013
 
 =head1 DESCRIPTION
 

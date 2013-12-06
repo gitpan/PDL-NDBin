@@ -1,6 +1,6 @@
 package PDL::NDBin::Action::Count;
 {
-  $PDL::NDBin::Action::Count::VERSION = '0.012';
+  $PDL::NDBin::Action::Count::VERSION = '0.013';
 }
 # ABSTRACT: Action for PDL::NDBin that counts elements
 
@@ -17,7 +17,7 @@ sub new
 	my $class = shift;
 	my $self = validate( @_, {
 			N    => { type => SCALAR, regex => qr/^\d+$/ },
-			type => { type => OBJECT, isa => 'PDL::Type', default => PDL::long }
+			type => { type => OBJECT, isa => 'PDL::Type', default => defined(&PDL::indx) ? PDL::indx() : PDL::long }
 		} );
 	return bless $self, $class;
 }
@@ -48,13 +48,15 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 PDL::NDBin::Action::Count - Action for PDL::NDBin that counts elements
 
 =head1 VERSION
 
-version 0.012
+version 0.013
 
 =head1 DESCRIPTION
 
@@ -66,12 +68,12 @@ This class implements an action for PDL::NDBin.
 
 	my $instance = PDL::NDBin::Action::Count->new(
 		N    => $N,
-		type => long,   # default
+		type => indx,   # default
 	);
 
 Construct an instance for this action. Requires the number of bins $N as input.
 Optionally allows the type of the output piddle to be set (defaults to
-I<long>).
+I<indx>).
 
 =head2 process()
 

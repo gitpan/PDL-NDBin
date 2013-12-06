@@ -28,6 +28,7 @@ lib/PDL/NDBin/Action/Sum.pm
 lib/PDL/NDBin/Iterator.pm
 pp/Makefile.PL
 pp/actions.pd
+pp/typemap
 t/00-compile.t
 t/000-report-versions-tiny.t
 t/01-bad.t

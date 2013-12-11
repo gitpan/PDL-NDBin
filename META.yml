@@ -14,11 +14,11 @@ build_requires:
   Test::More: 0.88
   Test::NoWarnings: 0
   Test::PDL: 0.10
-  perl: 5.006
 configure_requires:
   ExtUtils::MakeMaker: 6.30
+  PDL::Core::Dev: 0
 dynamic_config: 0
-generated_by: 'Dist::Zilla version 5.006, CPAN::Meta::Converter version 2.133380'
+generated_by: 'Dist::Zilla version 4.300039, CPAN::Meta::Converter version 2.120921'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -50,4 +50,4 @@ resources:
   bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=PDL-NDBin
   homepage: https://metacpan.org/release/PDL-NDBin
   repository: git://github.com/ebaudrez/pdl-ndbin.git
-version: 0.014
+version: 0.015

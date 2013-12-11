@@ -1,6 +1,6 @@
 package PDL::NDBin;
 {
-  $PDL::NDBin::VERSION = '0.014';
+  $PDL::NDBin::VERSION = '0.015';
 }
 # ABSTRACT: Multidimensional binning & histogramming
 
@@ -521,15 +521,13 @@ __END__
 
 =pod
 
-=encoding UTF-8
-
 =head1 NAME
 
 PDL::NDBin - Multidimensional binning & histogramming
 
 =head1 VERSION
 
-version 0.014
+version 0.015
 
 =head1 SYNOPSIS
 

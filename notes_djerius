@@ -1,0 +1,7 @@
+ [ ] documentation
+ [ ] test supplied edges for strict monotonicity
+ [X] test trivial grid (sequence N) for equality with _flatten_into [done]
+ [ ] test simple edge list with _flatten_into_grid
+ [ ] why the change in number of tests in t/04-flatten.t?
+ [-] spurious newlines [I'll do it]
+ [0] split commits for t/05-oo.t into reformat commit (almost git diff -w clean) + actual _flatten_into_grid commit [not necessary]

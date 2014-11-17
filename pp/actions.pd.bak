@@ -31,9 +31,19 @@ use PDL::Lite; # load PDL to check definedness of &PDL::indx
 my $indx_type = defined( &PDL::indx ) ? 'indx' : 'int';
 my $PDL_Indx_type = defined( &PDL::indx ) ? 'PDL_Indx' : 'int';
 
+...
+sub _flatten_into
+{
+	my( $pdl, $idx, $step, $min, $n ) = @_;
+	my $binned = PDL::indx( ($pdl - $min)/$step );
+	$binned->inplace->clip( 0, $n-1 );
+	$idx = $idx * $n + $binned;
+	return $idx;
+}
+
 # _flatten_into
 #
-pp_def( '_flatten_into',
+pp_def( '_flXXXXn_into',
 	Pars => "in(m); $indx_type b(m); $indx_type [o] idx(m)",
 	OtherPars => "double step; double min; $PDL_Indx_type n",
 	HandleBad => 1,

@@ -1,9 +1,6 @@
 package PDL::NDBin;
-{
-  $PDL::NDBin::VERSION = '0.015';
-}
 # ABSTRACT: Multidimensional binning & histogramming
-
+$PDL::NDBin::VERSION = '0.016';
 use strict;
 use warnings;
 use Exporter;
@@ -74,7 +71,9 @@ sub new
 	$params{axes} ||= [];		# be sure we can dereference
 	my @axes = @{ $params{axes} };
 	for my $axis ( @axes ) {
-		my( $name ) = validate_pos( @$axis, 1, (0) x (@$axis - 1) );
+		my @pat = ( 1 );					# one mandatory argument
+		if( @$axis > 1 ) { push @pat, (0) x (@$axis - 1) }	# followed by n-1 optional arguments
+		my( $name ) = validate_pos( @$axis, @pat );
 		shift @$axis; # remove name
 		$self->add_axis( name => $name, @$axis );
 	}
@@ -521,13 +520,15 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 PDL::NDBin - Multidimensional binning & histogramming
 
 =head1 VERSION
 
-version 0.015
+version 0.016
 
 =head1 SYNOPSIS
 
@@ -2114,7 +2115,7 @@ Edward Baudrez <ebaudrez@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2013 by Edward Baudrez.
+This software is copyright (c) 2014 by Edward Baudrez.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

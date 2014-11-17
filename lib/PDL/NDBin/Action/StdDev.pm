@@ -1,9 +1,6 @@
 package PDL::NDBin::Action::StdDev;
-{
-  $PDL::NDBin::Action::StdDev::VERSION = '0.015';
-}
 # ABSTRACT: Action for PDL::NDBin that computes standard deviation
-
+$PDL::NDBin::Action::StdDev::VERSION = '0.016';
 
 use strict;
 use warnings;
@@ -52,13 +49,15 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 PDL::NDBin::Action::StdDev - Action for PDL::NDBin that computes standard deviation
 
 =head1 VERSION
 
-version 0.015
+version 0.016
 
 =head1 DESCRIPTION
 
@@ -96,7 +95,7 @@ Edward Baudrez <ebaudrez@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2013 by Edward Baudrez.
+This software is copyright (c) 2014 by Edward Baudrez.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
